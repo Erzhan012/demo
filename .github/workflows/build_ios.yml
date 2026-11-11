@@ -1,36 +1,21 @@
-name: Build Unsigned iOS IPA
-
-on:
-  workflow_dispatch: # Позволяет запускать сборку вручную кнопкой
-
+name: build-ipa
+on: [push, workflow_dispatch]
 jobs:
-  build-ios:
-    runs-on: macos-latest # Запуск на виртуальном Mac
-
+  build:
+    runs-on: macos-latest
     steps:
-      - name: Скачивание кода
-        uses: actions/checkout@v4
-
-      - name: Установка Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-
-      - name: Установка зависимостей
-        run: flutter pub get
-
-      - name: Сборка iOS без подписи
-        run: flutter build ios --release --no-codesign
-
-      - name: Упаковка в .ipa
+      - uses: actions/checkout@v4
+      - run: brew install xcodegen
+      - run: xcodegen generate
+      - name: build
         run: |
-          mkdir -p Payload
-          cp -r build/ios/iphoneos/Runner.app Payload/
-          zip -r app-unsigned.ipa Payload
-
-      - name: Сохранение готового файла
-        uses: actions/upload-artifact@v4
+          xcodebuild -project Demo.xcodeproj -scheme Demo \
+            -configuration Release -sdk iphoneos -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
+          mkdir Payload
+          cp -R build/Build/Products/Release-iphoneos/Demo.app Payload/
+          zip -r Demo.ipa Payload
+      - uses: actions/upload-artifact@v4
         with:
-          name: ios-ipa-file
-          path: app-unsigned.ipa
-          
+          name: Demo-ipa
+          path: Demo.ipa
