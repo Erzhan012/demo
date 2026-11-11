@@ -1,0 +1,4 @@
+.gradle/
+.suroot/
+build/
+*.ipa
